@@ -22,6 +22,9 @@ contract TokenMarketplace{
      error TokenMarketPlace_InsufficentAllowance(uint256 requiredAllowance, uint256 actualAllowance);
      error TokenMarketPlace_sellOrderIsNotActive(uint256 orderId);
      error TokenMarketPlace_NotEnoughTokensInOrder(uint256 actualTokens, uint256 requiredTokens);
+     error TokenMarketPlace_EthPaymentFailed();
+     error TokenMarketPlace_InvalidOrderId();
+     error TokenMarketPlace_UnAuthorizedSeller(address caller, uint256 orderId);
 
      constructor(address _slvToken){
       slvToken = IERC20(_slvToken); 
@@ -61,7 +64,7 @@ contract TokenMarketplace{
      function _checkEthPayment(uint256 numberOfTokens) internal view{
             if(numberOfTokens*TOKEN_PRICE != msg.value){
                revert TokenMarketPlace_InsufficentEthPayment(numberOfTokens*TOKEN_PRICE,msg.value);
-          }
+          }    
      }
 
      function buyTokensFromMarketPlace(uint256 numberOfTokens) external payable {
@@ -73,9 +76,21 @@ contract TokenMarketplace{
 
      }
 
+     function getNumberOfCreatedOrders() public view returns(uint256){
+          return nextOrder;
+     }
+
+     function _validateOrderId(uint256 orderId) internal view {
+          uint256 totalNumberOfCreatedOrder = getNumberOfCreatedOrders();
+          if(orderId >= totalNumberOfCreatedOrder){
+               revert TokenMarketPlace_InvalidOrderId();
+          }
+     } 
+
      function createSellOrder(uint256 numberOfTokensToSell)external
 
          {
+          
            _isNumberOfTokensZero(numberOfTokensToSell);
            _checkSellerSlvTokenBalance(numberOfTokensToSell);
            uint256 allowance = slvToken.allowance(msg.sender, address(this));
@@ -99,16 +114,18 @@ contract TokenMarketplace{
 
           }
 
-        
+
      
      function buyTokensFromSellOrderCreator(uint256 orderId, uint256 numberOfTokensToBuy) external payable {
+          _validateOrderId(orderId);
           _isNumberOfTokensZero(numberOfTokensToBuy);
           _checkEthPayment(numberOfTokensToBuy);
-          OrderInfo memory order = orders[orderId];
+
+          OrderInfo storage order = orders[orderId];
          
 
-          if(order.isActive == false){
-               revert  TokenMarketPlace_sellOrderIsNotActive(orderId);
+         if(order.isActive == false){
+               revert  TokenMarketPlace_sellOrderIsNotActive(order.orderId);
           }
 
           if(order.numberOfTokensToSell < numberOfTokensToBuy){
@@ -124,10 +141,24 @@ contract TokenMarketplace{
           slvToken.transfer(msg.sender, numberOfTokensToBuy);
 
           (bool sucsess,) = order.seller.call{value: msg.value}("");
+          if (!sucsess) {
+            revert TokenMarketPlace_EthPaymentFailed();
+          }
 
 
 
 
           }
+
+     function cancelSellOrder(uint256 orderId) external {
+           _validateOrderId(orderId);
+           OrderInfo storage order = orders[orderId];
+
+           if(order.seller != msg.sender){
+               revert TokenMarketPlace_UnAuthorizedSeller(msg.sender, orderId);
+           }
+
+         
+     }
 
 }
