@@ -13,6 +13,7 @@ contract TokenMarketplace{
      uint private reseverdOderedTokens; // when i dont intialize this variable it will be 0 by default because solidity does not have any concept of null or None.
      IERC20 public slvToken;
      mapping(uint256 => OrderInfo) private orders;
+     OrderInfo[] private orderList;
      uint256 private nextOrder;
 
      error TokenMarketPlace_ZeroNumberOfTokens(uint256 numberOfTokens);
@@ -112,6 +113,8 @@ contract TokenMarketplace{
 
                reseverdOderedTokens += numberOfTokensToSell;
 
+               orderList.push(order);
+
           }
 
 
@@ -158,7 +161,19 @@ contract TokenMarketplace{
                revert TokenMarketPlace_UnAuthorizedSeller(msg.sender, orderId);
            }
 
-         
+          order.isActive = false;
+
+          reseverdOderedTokens -= order.numberOfTokensToSell;
+          slvToken.transfer(order.seller, order.numberOfTokensToSell);         
      }
+
+     function getCreatedOrdersById(uint256 orderId) external view returns (OrderInfo memory) {
+           _validateOrderId(orderId);
+           return orders[orderId];
+     }
+
+    function getAllOrders() external view returns(OrderInfo[] memory){
+     return orderList;
+    }
 
 }
