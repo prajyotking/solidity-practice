@@ -3,17 +3,19 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {OrderInfo} from "./types/Trades.sol";
 
 
 //int - both positive and negative values
 //uint - only for positive
-contract TokenMarketplace{
+contract TokenMarketplace is Ownable{
      uint public constant TOKEN_PRICE = 1 ether;
      uint private reseverdOderedTokens; // when i dont intialize this variable it will be 0 by default because solidity does not have any concept of null or None.
      IERC20 public slvToken;
      mapping(uint256 => OrderInfo) private orders;
      OrderInfo[] private orderList;
+ 
      uint256 private nextOrder;
 
      error TokenMarketPlace_ZeroNumberOfTokens(uint256 numberOfTokens);
@@ -26,8 +28,15 @@ contract TokenMarketplace{
      error TokenMarketPlace_EthPaymentFailed();
      error TokenMarketPlace_InvalidOrderId();
      error TokenMarketPlace_UnAuthorizedSeller(address caller, uint256 orderId);
+     // error TokenMarketPlace_InvalidOwner();
 
-     constructor(address _slvToken){
+     event buyTokens(address indexed buyer, uint256 numberOfTokensBought);// **indexed** is used to make some data store in "topics" on the top to make it retrive faster by a "indexer".
+     event numberOfOrders(uint256 ordersCount);
+
+
+
+     constructor(address _slvToken,address _owner)Ownable(_owner){
+      
       slvToken = IERC20(_slvToken); 
       /* What it does: You pass in the raw address of the token you want to sell (e.g., 0x123...). 
          The contract wraps that address in the IERC20 interface and stores it in your slvToken state variable.
@@ -74,10 +83,13 @@ contract TokenMarketplace{
           _checkTokenBalance(numberOfTokens);//check 3
 
           slvToken.transfer(msg.sender, numberOfTokens);//Okay Proceed to tranfer tokens to buyer
-
+          emit buyTokens(msg.sender, numberOfTokens);
      }
 
-     function getNumberOfCreatedOrders() public view returns(uint256){
+     function getNumberOfCreatedOrders() public view  returns(uint256){
+     //     if(msg.sender!= owner){
+     //      revert TokenMarketPlace_InvalidOwner();
+     //     }
           return nextOrder;
      }
 
