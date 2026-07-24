@@ -69,6 +69,7 @@ contract EventTicketingPlatform {
          EventType _eventType,
          TicketTier _ticketTier
   ) external payable
+  
   {
     if(msg.value == 0){
         revert  EventTicketingPlatform_InvalidAmount();
@@ -100,7 +101,8 @@ contract EventTicketingPlatform {
 
     ticketUsed[_ticketId] == true;
 
-    totalTicketsSold++;
+    totalTicketsSold++; 
+    }
 
     //  emit TicketPurchased(
     //         _ticketId,
@@ -110,7 +112,12 @@ contract EventTicketingPlatform {
     //         _eventType
     //     );
 
-   
-  }
+
+function getDaysUntilEvent (uint256 _ticketId) public view returns (uint256 daysRemaining){
 
 }
+
+
+}
+
+

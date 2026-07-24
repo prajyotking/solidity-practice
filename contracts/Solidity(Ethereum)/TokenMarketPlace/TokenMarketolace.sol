@@ -5,11 +5,13 @@ pragma solidity >=0.7.0 <0.9.0;
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {OrderInfo} from "./types/Trades.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 
 //int - both positive and negative values
 //uint - only for positive
-contract TokenMarketplace is Ownable{
+contract TokenMarketplace is Ownable, Pausable, ReentrancyGuard{ //welding the two abstract contracts in my contract
      uint public constant TOKEN_PRICE = 1 ether;
      uint private reseverdOderedTokens; // when i dont intialize this variable it will be 0 by default because solidity does not have any concept of null or None.
      IERC20 public slvToken;
@@ -77,7 +79,7 @@ contract TokenMarketplace is Ownable{
           }    
      }
 
-     function buyTokensFromMarketPlace(uint256 numberOfTokens) external payable {
+     function buyTokensFromMarketPlace(uint256 numberOfTokens) external payable whenNotPaused{
           _isNumberOfTokensZero(numberOfTokens); //check 1
           _checkEthPayment(numberOfTokens); //check 2
           _checkTokenBalance(numberOfTokens);//check 3
@@ -186,6 +188,14 @@ contract TokenMarketplace is Ownable{
 
     function getAllOrders() external view returns(OrderInfo[] memory){
      return orderList;
+    }
+
+    receive() external payable { 
+
+    }
+
+    fallback() external payable { 
+     
     }
 
 }
